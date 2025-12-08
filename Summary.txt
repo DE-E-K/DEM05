@@ -1,0 +1,95 @@
+Executive Summary of Movie Performance Analysis
+
+1. Dataset Overview
+   - Size: 18 movies × 24 features
+   - Key Metrics Tracked: Revenue, Budget, Profit, ROI, Vote Count, Vote Average, Popularity
+   - Additional Features: Franchise information, directors, genres, production details
+
+2. Key Performance Indicators (KPIs) Analysis
+
+   Top Performers by Revenue:
+   1. Avatar ($2.92B)
+   2. Avengers: Endgame ($2.79B)
+   3. Titanic ($2.26B)
+
+   Top Performers by Profit:
+   1. Avatar ($2.69B profit)
+   2. Avengers: Endgame ($2.44B profit)
+   3. Titanic ($2.06B profit)
+
+   Highest Budget Films:
+   1. Avengers: Endgame ($356M)
+   2. Avengers: Infinity War ($300M)
+   3. Star Wars: The Last Jedi ($300M)
+
+   Best Return on Investment (ROI) for films with budget > $10M:
+   1. Avatar (12.33x return)
+   2. Titanic (11.32x return)
+   3. Jurassic World (11.14x return)
+
+3. Audience & Critical Reception
+
+   Most Popular Films:
+   1. The Avengers (Popularity: 43.29)
+   2. Titanic (29.88)
+   3. Avatar (24.87)
+
+   Top Voted Films (by vote count):
+   1. The Avengers (34,141 votes)
+   2. Avatar (32,843 votes)
+   3. Avengers: Infinity War (31,165 votes)
+
+   Highest Rated Films (with ≥10 votes):
+   1. Avengers: Endgame (8.24)
+   2. Avengers: Infinity War (8.24)
+   3. Harry Potter and the Deathly Hallows: Part 2 (8.08)
+
+4. Franchise vs. Standalone Analysis
+
+   Key Findings:
+   - Standalone films slightly outperform franchise films in revenue ($1.77B vs $1.68B)
+   - Franchise films have higher budgets on average ($218M vs $180M)
+   - Standalone films show better ROI (9.62x vs 7.99x)
+   - Popularity favors standalone films (21.59 vs 14.67)
+   - Critical ratings are nearly equal between both categories
+
+5. Most Successful Franchises
+
+   Top 3 Franchises by Total Revenue:
+   1. The Avengers Collection (4 films, $7.78B total revenue)
+   2. Avatar Collection (1 film, $2.92B total revenue)
+   3. Frozen Collection (2 films, $2.73B total revenue)
+
+6. Director Performance
+
+   Most Prolific Directors (in this dataset):
+   1. Joss Whedon (2 films)
+   2. Jennifer Lee (2 films)
+   3. James Cameron (2 films)
+
+   Directors by Total Revenue Generated:
+   1. James Cameron ($5.19B)
+   2. Joss Whedon ($2.92B)
+   3. Anthony Russo ($2.79B)
+
+7. Data Quality & Missing Values
+   - Only 2 missing values in `belongs_to_collection` and `collection_name` fields
+   - All other key metrics have complete data
+
+8. Visualizations Created
+   The analysis includes visualizations for:
+   - Revenue vs. Budget trends
+   - ROI distribution by genre
+   - Popularity vs. Rating relationships
+   - Yearly box office performance trends
+   - Franchise vs. Standalone success comparisons
+
+Key Insights:
+1. Avatar emerges as the most successful film across multiple metrics (revenue, profit, ROI)
+2. The Avengers franchise dominates in franchise performance and viewership
+3. Standalone films show surprisingly competitive performance against franchises
+4. James Cameron stands out as the highest-grossing director
+5. Higher budgets don't guarantee better ROI, as seen with some high-budget films underperforming
+6. Critical acclaim and box office success are strongly correlated for top-performing films
+
+This analysis provides a comprehensive framework for evaluating film success across financial, audience, and critical dimensions, offering valuable insights for production decisions and investment strategies in the film industry.
