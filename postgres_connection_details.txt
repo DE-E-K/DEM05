@@ -1,0 +1,6 @@
+HOST=localhost
+PORT=5432
+DB_NAME=e-commerce
+USER=postgres
+PASSWORD=LearnStreaming!2026
+TABLE_NAME=e_commerce_events
