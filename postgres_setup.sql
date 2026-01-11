@@ -3,7 +3,7 @@
 
 -- Note: 'IF NOT EXISTS' is not supported for CREATE DATABASE in standard PostgreSQL.
 -- If the database already exists, this command will fail. You can ignore that error.
-CREATE DATABASE e_commerce
+CREATE DATABASE "e-commerce"
     WITH
     OWNER = postgres
     ENCODING = 'UTF8'

@@ -95,9 +95,12 @@ def main():
     clean_df = streaming_df.filter(col("event_id").isNotNull())
 
     # Write Stream
-    query = clean_df.writeStream \
+    # Remove duplicates based on event_id to ensure uniqueness
+    deduplicated_df = clean_df.dropDuplicates(['event_id'])
+
+    query = deduplicated_df.writeStream \
         .foreachBatch(write_to_postgres) \
-        .outputMode("append") \
+        .outputMode("update") \
         .start()
 
     query.awaitTermination()
