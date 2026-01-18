@@ -37,7 +37,7 @@ Ensure you have the following installed on your system:
 We provide an automated PowerShell script to handle environment setup and execution.
 
 ### 1. Configure Environment
-Ensure a `.env` file exists in the project root with your TMDB API key:
+Ensure a `.env` file exists in this directory (`src/spark_impl`) with your TMDB API key:
 ```env
 api_key=YOUR_API_KEY_HERE
 ```

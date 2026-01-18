@@ -48,7 +48,7 @@ This project is a comprehensive data analysis of the modern film industry, explo
 
 3.  **API Key Configuration**:
     To fetch fresh data, you need a TMDb API key.
-    -   Create a `.env` file in the root directory.
+    -   Create a `.env` file in this directory (`src/pandas_impl`).
     -   Add your key:
         ```text
         API_KEY=your_tmdb_api_key_here

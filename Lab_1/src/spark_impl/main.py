@@ -3,9 +3,6 @@ import os
 import sys
 import json
 
-# Ensure BySpark is in python path
-sys.path.append(os.path.join(os.getcwd(), 'BySpark'))
-
 # Use 'python' from PATH to avoid issues with spaces in absolute paths on Windows
 os.environ["PYSPARK_PYTHON"] = "python"
 os.environ["PYSPARK_DRIVER_PYTHON"] = "python"
