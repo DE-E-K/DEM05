@@ -9,31 +9,30 @@
 ## Setup
 
 1.  **Database Configuration**:
-    - Update `postgres_connection_details.txt` with your database credentials.
+    - Update `config/postgres_connection_details.txt` with your database credentials.
     - Run the setup script to create the table:
       ```bash
-      psql -h <host> -U <username> -d <dbname> -f postgres_setup.sql
+      psql -h <host> -U <username> -d <dbname> -f config/postgres_setup.sql
       ```
 
 2.  **Environment Setup**:
-    - Ensure your `spark_streaming_to_postgres.py` script points to the correct input directory where CSVs will be generated.
-    - Ensure the `input_data` directory exists or let the script create it.
+    - Ensure your `src/spark_streaming_to_postgres.py` script points to the correct input directory (`data/input_data`).
 
 ## Running the Pipeline
 
 1.  **Start the Data Generator**:
-    Open a terminal and run:
+    Open a terminal in `Lab_2` and run:
     ```bash
-    python data_generator.py
+    python src/data_generator.py
     ```
-    This will start creating CSV files in the `input_data` folder.
+    This will start creating CSV files in the `data/input_data` folder.
 
 2.  **Start the Spark Streaming Job**:
-    Open another terminal and submit the Spark job (ensure you provide the path to the Postgres JDBC jar):
+    Open another terminal and submit the Spark job:
     ```bash
-    spark-submit --packages org.postgresql:postgresql:42.5.0 spark_streaming_to_postgres.py
+    spark-submit --driver-class-path lib/postgresql-42.7.3.jar --jars lib/postgresql-42.7.3.jar src/spark_streaming_to_postgres.py
     ```
-    *Note: If you have downloaded the jar locally, use `--jars /path/to/postgresql-42.x.x.jar` instead of `--packages`.*
+    *Note: The command assumes you are in the `Lab_2` directory.*
 
 3.  **Verify Data**:
     Connect to your PostgreSQL database and query the table:
