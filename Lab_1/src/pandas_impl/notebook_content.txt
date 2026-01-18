@@ -1,0 +1,553 @@
+--- MARKDOWN CELL ---
+# TMDB Movie Data Analysis
+
+## Project Overview
+This project analyzes movie data fetched from the TMDb API. It includes data cleaning, KPI calculation, advanced filtering (Directors/Cast), and visualization as per the project requirements.
+
+--- CODE CELL ---
+# Importing required libraries to complete the task 
+import pandas as pd
+import requests
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# Set plot style
+sns.set_theme(style="whitegrid")
+plt.rcParams['figure.figsize'] = (12, 6)
+
+--- MARKDOWN CELL ---
+## 1. Data Fetching
+Fetching data from TMDb API using the provided movie IDs.
+
+--- CODE CELL ---
+# Input variables to function fetch movie data
+API_KEY = os.getenv('api_key')
+BASE_URL = "https://api.themoviedb.org/3/movie/"
+
+movie_ids = [
+    0, 299534, 19995, 140607, 299536, 597, 135397, 420818, 24428, 
+    168259, 99861, 2840, 12445, 181808, 330457, 351286, 109445, 
+    321612, 260513
+]
+
+--- CODE CELL ---
+# Function to fetch movie data from TMDb API
+def fetch_movie_data(movie_ids, api_key):
+    movies_data = []
+    if not api_key:
+        raise ValueError("API key is required.")
+    print(f"TBMb API key verified and we going to fetch data for {len(movie_ids)} movies.")
+    print("Fetching data...")
+    for movie_id in sorted(movie_ids):
+        # Includes 'credits' to get Cast and Crew info
+        url = f"{BASE_URL}{movie_id}?api_key={api_key}&language=en-US&append_to_response=credits"
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                movies_data.append(response.json())
+            else:
+                print(f"Error fetching ID {movie_id}: {response.status_code}")
+        except Exception as e:
+            print(f"Exception for ID {movie_id}: {e}")
+    print(f"Fetched data for {len(movies_data)} movies, and failed to fetch data for {len(movie_ids) - len(movies_data)} movies.")
+    return movies_data
+
+# fetch data
+raw_data = fetch_movie_data(movie_ids, API_KEY)
+df_raw = pd.DataFrame(raw_data)
+
+--- CODE CELL ---
+# save data to csv
+df_raw.to_csv('tmdb_movies_raw_data.csv', index=False)
+
+--- MARKDOWN CELL ---
+## 2. Data Cleaning and Preprocessing
+
+--- MARKDOWN CELL ---
+### Data preparation and cleaning
+
+--- MARKDOWN CELL ---
+1. Drop irrelevant columns
+
+--- CODE CELL ---
+df =df_raw.copy()
+cols_to_drop = ['adult', 'imdb_id', 'original_title', 'video', 'homepage']
+df = df.drop(columns=[c for c in cols_to_drop if c in df.columns], errors='ignore')
+
+--- MARKDOWN CELL ---
+2. Evaluating json columns
+
+--- CODE CELL ---
+json_cols = ['belongs_to_collection', 'genres', 'production_companies', 
+             'production_countries', 'spoken_languages']
+df[json_cols].head()
+
+--- MARKDOWN CELL ---
+3. Extract key colomn data 
+
+--- CODE CELL ---
+# Extract collection names from 'belongs_to_collection' column
+if 'belongs_to_collection' in df.columns:
+    df['collection_name'] = df['belongs_to_collection'].apply(
+        lambda x: x['name'] if isinstance(x, dict) else None
+    )
+
+--- CODE CELL ---
+# separate genre names by | from genres column
+# separate spoken language names by | from spoken_languages column
+# separate production company names by | from production_companies column
+# separate production country names by | from production_countries column
+def extract_names(data, key):
+    if isinstance(data, list):
+        return '|'.join([item['name'] for item in data if 'name' in item])
+    return None
+df['genres'] = df['genres'].apply(lambda x: extract_names(x, 'name'))
+df['spoken_languages'] = df['spoken_languages'].apply(lambda x: extract_names(x, 'name'))
+df['production_companies'] = df['production_companies'].apply(lambda x: extract_names(x, 'name'))
+df['production_countries'] = df['production_countries'].apply(lambda x: extract_names(x, 'name'))
+
+--- MARKDOWN CELL ---
+4. Inspect extracted columns using value_counts() to identify anomalies.
+
+--- CODE CELL ---
+extracted_cols = ['collection_name', 'genres', 'spoken_languages', 
+                  'production_companies', 'production_countries']
+
+for col in extracted_cols:
+    if col in df.columns:
+        print(f"\n{col} values count:")
+        print(df[col].value_counts())
+
+--- MARKDOWN CELL ---
+### Handling Missing & Incorrect Data
+
+--- MARKDOWN CELL ---
+5. Convert column datatype and replace unrealistic values
+
+--- CODE CELL ---
+# 5. Numeric Conversion & Handling 0/NaN
+df['budget_musd'] = pd.to_numeric(df['budget'], errors='coerce') / 1000000  # Convert to Millions
+df['revenue_musd'] = pd.to_numeric(df['revenue'], errors='coerce') / 1000000 # Convert to Millions
+df['runtime'] = pd.to_numeric(df['runtime'], errors='coerce')
+df['vote_count'] = pd.to_numeric(df['vote_count'], errors='coerce').fillna(0)
+
+# Replace 0 with NaN for analysis where 0 is invalid
+df.loc[df['budget_musd'] <= 0, 'budget_musd'] = np.nan
+df.loc[df['revenue_musd'] <= 0, 'revenue_musd'] = np.nan
+df.loc[df['runtime'] <= 0, 'runtime'] = np.nan
+
+# Date Handling
+df['release_date'] = pd.to_datetime(df['release_date'])
+df['release_year'] = df['release_date'].dt.year
+
+--- MARKDOWN CELL ---
+7. Remove duplicates and drop rows with unknown 'id' or 'title'.
+
+--- CODE CELL ---
+# Remove duplicates based on a hashable key (use 'id' which is hashable)
+df.drop_duplicates(subset='id', inplace=True)
+
+# remove rows with unknown id or title (require both present), how many rows and columns 
+# left and cols with missing values
+df = df[df['id'].notna() & df['title'].notna()]
+
+# show shape and columns that have missing values
+print(f"column: {df.shape[1]}, rows: {df.shape[0]}")
+print("\nColumns with missing values:")
+print(df.isnull().sum()[df.isnull().sum() > 0])
+
+--- MARKDOWN CELL ---
+8. Keep only rows where at least 10 columns have non-NaN values.
+
+--- CODE CELL ---
+df = df.dropna(thresh=10)
+
+--- MARKDOWN CELL ---
+9. Filter to include only 'Released' movies, then drop 'status'.
+
+--- CODE CELL ---
+if 'status' in df.columns:
+    df = df[df['status'] == 'Released'].drop(columns=['status'])
+
+--- MARKDOWN CELL ---
+10. Extract directors and and cast
+
+--- CODE CELL ---
+# 4. Extract Director and Cast
+if 'credits' in df.columns:
+    def get_director(credits_json):
+        if isinstance(credits_json, dict) and 'crew' in credits_json:
+            directors = [m['name'] for m in credits_json['crew'] if m.get('job') == 'Director']
+            return '|'.join(directors)
+        return ''
+    def get_cast(credits_json):
+        if isinstance(credits_json, dict) and 'cast' in credits_json:
+            cast = [m['name'] for m in credits_json['cast']]
+            return '|'.join(cast)
+        return ''
+    df['director'] = df['credits'].apply(get_director)
+    df['cast'] = df['credits'].apply(get_cast)
+
+--- MARKDOWN CELL ---
+11. Add cast_size and crew size
+
+--- CODE CELL ---
+# cast_size and crew_size
+if 'credits' in df.columns:
+    def get_cast_size(credits_json):
+        if isinstance(credits_json, dict) and 'cast' in credits_json:
+            return len(credits_json['cast'])
+        return 0
+    def get_crew_size(credits_json):
+        if isinstance(credits_json, dict) and 'crew' in credits_json:
+            return len(credits_json['crew'])
+        return 0
+    df['cast_size'] = df['credits'].apply(get_cast_size)
+    df['crew_size'] = df['credits'].apply(get_crew_size)
+
+--- MARKDOWN CELL ---
+12. Reorder columns for better readability
+
+--- CODE CELL ---
+# check if columns exist in df and sort 
+sorted_cols = ['id', 'title', 'tagline', 'release_year', 'release_date', 'genres', 'collection_name', 
+               'original_language', 'budget_musd', 'revenue_musd', 'production_companies', 
+               'production_countries', 'vote_count', 'vote_average', 'popularity', 'runtime', 
+               'overview', 'spoken_languages', 'poster_path', 'cast', 'cast_size', 'director', 
+               'crew_size']
+
+# check missing col
+missing_cols = [col for col in sorted_cols if col not in df.columns]
+print("Missing columns in cleaned DataFrame:")
+print(missing_cols)
+
+print(len(sorted_cols))
+df_cleaned = df[[col for col in sorted_cols if col in df.columns]]
+df_cleaned.shape
+
+--- MARKDOWN CELL ---
+13. Remain columns profit and roi
+
+--- CODE CELL ---
+df_cleaned.loc[:, 'profit_musd'] = df_cleaned['revenue_musd'] - df_cleaned['budget_musd']
+df_cleaned.loc[:, 'roi'] = df_cleaned['profit_musd'] / df_cleaned['budget_musd']
+df_cleaned.loc[:, 'is_franchise'] = df_cleaned['collection_name'].notna()
+
+--- CODE CELL ---
+# describe numeric columns
+df_cleaned.describe().T
+
+--- CODE CELL ---
+# decribe categorical columns
+df_cleaned.describe(include=['object', 'bool']).T
+
+--- CODE CELL ---
+# check outliers by subplots boxplot
+def box_dist(data):
+    make_subplots = True
+    num_cols = data.select_dtypes(include=[np.number]).columns.tolist()
+    num_cols.remove('id')  # Exclude 'id' from outlier treatment
+    num_cols.remove('release_year')  # Exclude 'release_year' from outlier treatment
+    if make_subplots:
+        cols_per_row = 3
+        rows = int(np.ceil(len(num_cols) / cols_per_row))
+        fig, axes = plt.subplots(rows, cols_per_row, figsize=(cols_per_row*5, rows*4))
+        axes = axes.flatten() if isinstance(axes, np.ndarray) else [axes]
+        for ax, col in zip(axes, num_cols):
+            sns.boxplot(y=df_cleaned[col], ax=ax)
+            ax.set_title(f'Boxplot of {col}')
+        for ax in axes[len(num_cols):]:
+            ax.set_visible(False)
+        plt.tight_layout()
+        plt.show()
+    else:
+        for col in num_cols:
+            plt.figure(figsize=(6,4))
+            sns.boxplot(y=data[col])
+            plt.title(f'Boxplot of {col}')
+            plt.show()
+
+box_dist(df_cleaned)
+
+--- CODE CELL ---
+# Replace outliers with the median
+def remove_outliers(data):
+    num_cols = data.select_dtypes(include=[np.number]).columns.tolist()
+    num_cols.remove('id')  # Exclude 'id' from outlier treatment
+    num_cols.remove('release_year')  # Exclude 'release_year' from outlier treatment
+    for col in num_cols:
+        Q1 = data[col].quantile(0.25)
+        Q3 = data[col].quantile(0.75)
+        IQR = Q3 - Q1
+        lower_bound = Q1 - 1.5 * IQR
+        upper_bound = Q3 + 1.5 * IQR
+        median = data[col].median()
+        data.loc[:, col] = np.where(data[col] < lower_bound, median,
+                           np.where(data[col] > upper_bound, median, data[col]))
+    return data
+
+--- CODE CELL ---
+df_cleaned = remove_outliers(df_cleaned)
+box_dist(df_cleaned)
+
+--- CODE CELL ---
+# save cleaned data to csv
+# df_cleaned.to_csv('tmdb_movies_cleaned.csv', index=False)
+
+--- MARKDOWN CELL ---
+### 3.1 Rankings and Performance Analysis
+1. Filter and rank movies based on: Revenue, Budget, Profit, ROI, Rating, and Popularity.
+
+--- CODE CELL ---
+df_cleaned = pd.read_csv('tmdb_movies_cleaned.csv')
+df_cleaned.columns
+
+--- CODE CELL ---
+def analyze_kpi(df):
+    # Helper to print tables
+    def print_top_bottom(metric, label, ascending=False, n=5):
+        print(f"\nTop {n} {label}" if not ascending else f"\nLowest {n} {label}")
+        if ascending:
+            print(df.nsmallest(n, metric)[['title', metric]])
+        else:
+            print(df.nlargest(n, metric)[['title', metric]])
+
+    # 1. Revenue
+    print_top_bottom('revenue_musd', 'Revenue')
+    
+    # 2. Budget
+    print_top_bottom('budget_musd', 'Budget')
+    print_top_bottom('budget_musd', 'Budget', ascending=True) # Lowest Budget
+
+    # 3. Profit
+    print_top_bottom('profit_musd', 'Profit')
+    print_top_bottom('profit_musd', 'Profit (Worst)', ascending=True)
+    
+    # 4. ROI (Budget >= 10M for meaningful comparison)
+    roi_df = df[df['budget_musd'] >= 10]
+    print("\nTop 5 ROI (Budget >= 10M)")
+    print(roi_df.nlargest(5, 'roi')[['title', 'budget_musd', 'revenue_musd', 'roi']])
+    
+    # 5. Rating (Vote Count >= 10)
+    rated_df = df[df['vote_count'] >= 10]
+    print("\nTop 5 Rated (Votes >= 10)")
+    print(rated_df.nlargest(5, 'vote_average')[['title', 'vote_average', 'vote_count']])
+    
+    print("\nLowest 5 Rated (Votes >= 10)")
+    print(rated_df.nsmallest(5, 'vote_average')[['title', 'vote_average', 'vote_count']])
+    
+    # 6. Popularity
+    print_top_bottom('popularity', 'Popularity')
+    
+    # 7 Most Voted Movies
+    print_top_bottom('vote_count', 'Vote Count')
+
+analyze_kpi(df_cleaned)
+
+--- MARKDOWN CELL ---
+### 3.2 Specific Search Queries
+
+--- MARKDOWN CELL ---
+2. Filter the dataset for specific queries:
+
+--- CODE CELL ---
+df_cleaned.columns
+
+--- CODE CELL ---
+ # 1. Bruce Willis + Sci-Fi + Action
+bruce_sci_fi = df_cleaned[
+    (df_cleaned['cast'].str.contains('Bruce Willis', na=False, case=False)) &
+    (df_cleaned['genres'].str.contains('Science Fiction', na=False, case=False)) |
+    (df_cleaned['genres'].str.contains('Action', na=False, case=False))
+].sort_values('vote_average', ascending=False)
+print("\nBruce Willis (Sci-Fi / Action)")
+bruce_sci_fi[['title', 'vote_average', 'revenue_musd','genres','cast']]
+
+
+--- CODE CELL ---
+bruce_sci_fi['cast']
+
+--- CODE CELL ---
+# 2. Tarantino + Uma Thurman
+tarantino_uma = df_cleaned[
+    (df_cleaned['director'].str.contains('Quentin Tarantino', na=False, case=False)) &
+    (df_cleaned['cast'].str.contains('Uma Thurman', na=False, case=False))
+]
+print("\nTarantino & Uma Thurman")
+print(tarantino_uma[['title', 'release_date', 'revenue_musd']])
+
+--- MARKDOWN CELL ---
+### 3.3 Comparative Analysis (Franchise & Director)
+
+--- MARKDOWN CELL ---
+3. Compare Franchise and non francise movies
+
+--- CODE CELL ---
+# Aggregate metrics
+franchise_stats = df_cleaned.groupby('is_franchise').agg({
+    'revenue_musd': 'mean',
+    'budget_musd': 'mean',
+    'roi': 'median',
+    'popularity': 'mean',
+    'vote_average': 'mean',
+    'title': 'count'
+}).rename(columns={'title': 'movie count', 
+                   'roi': 'median roi', 
+                   'vote_average': 'mean rating', 
+                   'popularity': 'mean popularity',
+                   'revenue_musd': 'mean revenue (M USD)',
+                   'budget_musd': 'mean budget (M USD)'})
+
+print("\nFranchise vs Standalone Comparison")
+franchise_stats
+
+--- MARKDOWN CELL ---
+4. Most succuessfull franchize movies
+
+--- CODE CELL ---
+# Most Successful Franchises movie based on Total Revenue, Budget and Ratings
+def most_successful_franchises(movie_df):
+    df = movie_df[movie_df['is_franchise']==True]
+    franchise_ranking = df.groupby(['collection_name']).agg({
+        'revenue_musd': 'sum',
+        'budget_musd': 'sum',
+        'vote_average': 'mean',
+        'title': 'count'
+    }).rename(columns={
+        'revenue_musd': 'total revenue (M USD)',
+        'budget_musd': 'total budget (M USD)',
+        'vote_average': 'mean rating',
+        'title': 'movie count'
+    }).sort_values('total revenue (M USD)', ascending=False)
+    
+    for col in franchise_ranking.columns:
+        print(f"\nTop 5 Franchises movies by {col}")
+        print(franchise_ranking.nlargest(5, col)[[col]])
+
+--- CODE CELL ---
+most_successful_franchises(df_cleaned)
+
+--- MARKDOWN CELL ---
+5. Most Successful Director based on  Total Revenue, movies directed, and average rating
+
+--- CODE CELL ---
+def most_successful_directors(movie_df):
+    df = movie_df
+    director_stats = df.groupby('director').agg({
+        'revenue_musd': 'sum',
+        'title': 'count',
+        'vote_average': 'mean'
+    }).rename(columns={
+        'revenue_musd': 'total revenue (M USD)',
+        'title': 'movies directed',
+        'vote_average': 'average rating'
+    }).sort_values('total revenue (M USD)', ascending=False)
+    
+    for col in director_stats.columns:
+        print(f"\nTop 5 Directors by {col}")
+        print(director_stats.nlargest(5, col)[[col]])
+
+most_successful_directors(df_cleaned)
+
+--- MARKDOWN CELL ---
+## 4. Visualizations
+
+--- MARKDOWN CELL ---
+1. Budget vs revenue trend
+
+--- CODE CELL ---
+# 1. Revenue vs Budget trend
+yearly_data = (df_cleaned.groupby('release_year')[['revenue_musd', 'budget_musd']]
+               .sum().reset_index().drop(0)
+               .rename(columns={'revenue_musd': 'Revenue', 'budget_musd': 'Budget'}))
+yearly_data_melted = yearly_data.melt(id_vars='release_year', var_name='Type', value_name='Amount').sort_values(by=['release_year', 'Type'])
+
+plt.figure(figsize=(12, 6))
+ax = sns.barplot(data=yearly_data_melted, 
+                 x='release_year', 
+                 y='Amount', 
+                 hue='Type', 
+                 palette=['darkgray', '#eb5d19'])
+for container in ax.containers:
+    ax.bar_label(container, fmt='%.1f', padding=3, rotation=0, fontsize=9)
+plt.title('Revenue vs Budget Over Years', fontsize=30, pad=20)
+plt.xlabel('Year')
+plt.ylabel('Amount (Million USD)')
+plt.legend(title='Type')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+--- MARKDOWN CELL ---
+2. ROI Distribution by Genre
+
+--- CODE CELL ---
+# ROI Distribution by Genre
+genre_roi = df_cleaned.groupby('genres')['roi'].sum().sort_values(ascending=False)
+plt.figure(figsize=(12, 6))
+ax = sns.barplot(x=genre_roi.values, y=genre_roi.index, color='#eb5d19')
+for container in ax.containers:
+    ax.bar_label(container, fmt='%.2f', padding=3, rotation=0, fontsize=9)
+plt.title('Total ROI by Genre', fontsize=30, pad=20)
+plt.xlabel('Total ROI')
+plt.ylabel('Genre')
+plt.tight_layout()
+plt.show()
+
+--- MARKDOWN CELL ---
+3. Yearly Box Office Trends (Total Revenue)
+
+--- CODE CELL ---
+# 3. Yearly Box Office Trends (Total Revenue)
+yearly_rev = df_cleaned.groupby('release_year')['revenue_musd'].sum().reset_index()
+plt.figure(figsize=(12,6))
+sns.lineplot(data=yearly_rev, x='release_year', y='revenue_musd', 
+             marker='o',label='Total Revenue', color='#eb5d19')
+plt.title('Total Revenue by Release Year', fontsize=30, pad=20 )
+plt.ylabel('Total Revenue (Million USD)')
+# plt.xticks(rotation=45)
+plt.xlabel('Year')
+plt.grid(False)
+plt.show()
+
+--- MARKDOWN CELL ---
+4. Popularity vs Rating
+
+
+--- CODE CELL ---
+df = df_cleaned[['popularity', 'vote_average']].drop(0)
+plt.figure(figsize=(10,6))
+sns.scatterplot(data=df, x='vote_average', y='popularity', s=100, color='#eb5d19')
+plt.title('Popularity vs Vote Average', fontsize=30, pad=20)
+plt.xlabel('Vote Average')
+plt.ylabel('Popularity')
+plt.show()
+
+--- MARKDOWN CELL ---
+5. Franchise Comparison Charts
+
+--- CODE CELL ---
+fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+plt.suptitle('Franchise vs Standalone Movies', fontsize=24, y=1.02)
+# Mean Revenue
+sns.barplot(data=df_cleaned, x='is_franchise', y='revenue_musd', ax=axes[0], errorbar=None, color='#eb5d19')
+axes[0].set_title('Mean Revenue: Franchise vs Standalone', fontsize=20, pad=20)
+axes[0].set_ylabel('Mean Revenue (Millions)')
+for container in axes[0].containers:
+    axes[0].bar_label(container, fmt='%.1f', padding=3)
+
+# Median ROI
+sns.barplot(data=df_cleaned, x='is_franchise', y='roi', estimator=np.median, ax=axes[1], errorbar=None, color='#eb5d19')
+axes[1].set_title('Median ROI: Franchise vs Standalone', fontsize=20, pad=20)
+for container in axes[1].containers:
+    axes[1].bar_label(container, fmt='%.2f', padding=3)
+
+plt.tight_layout()
+plt.show()
+
