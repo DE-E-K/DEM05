@@ -1,6 +1,7 @@
 # packages
 import requests
 import time
+import json
 
 
 # define a function to fetch movie data from TMDB API
@@ -17,13 +18,14 @@ def fetch_movie_data(api_key, movie_ids):
     """
     movies_data = []
     base_url = "https://api.themoviedb.org/3/movie/"
+    append_to_response = "credits,keywords,videos,similar,recommendations"
 
     print(f"Starting extraction for {len(movie_ids)} movies...")
     # Sort movie IDs to ensure consistent order before fetching
     movie_ids = sorted(movie_ids)
     for movie_id in movie_ids:
         try:
-            url = f"{base_url}{movie_id}?api_key={api_key}&language=en-US"
+            url = f"{base_url}{movie_id}?api_key={api_key}&language=en-US&append_to_response={append_to_response}"
             response = requests.get(url)
 
             if response.status_code == 200:
@@ -47,4 +49,5 @@ def fetch_movie_data(api_key, movie_ids):
 
     print(f"Extraction complete. Fetched data for: {len(movies_data)} movies.")
     print(f"Failed to fetch data for: {len(movie_ids) - len(movies_data)} movies.")
+    
     return movies_data

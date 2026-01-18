@@ -51,6 +51,22 @@ def clean_dataframe(df):
     if 'belongs_to_collection' in df_dropped.columns:
         df_dropped = df_dropped.withColumn("belongs_to_collection", F.col("belongs_to_collection.name"))
 
+    # Extract Cast and Crew details
+    if 'credits' in df_dropped.columns:
+        # Cast Names
+        df_dropped = df_dropped.withColumn("cast", F.expr("transform(credits.cast, x -> x.name)"))
+        df_dropped = df_dropped.withColumn("cast", F.concat_ws("|", "cast"))
+        
+        # Cast Size
+        df_dropped = df_dropped.withColumn("cast_size", F.size(F.col("credits.cast")))
+        
+        # Director (First crew member with job='Director')
+        df_dropped = df_dropped.withColumn("director", F.expr("filter(credits.crew, x -> x.job = 'Director')[0].name"))
+        
+        # Crew Size
+        df_dropped = df_dropped.withColumn("crew_size", F.size(F.col("credits.crew")))
+
+
     # 3. Handle Datatypes and Missing Values
 
     # Convert budget and revenue to millions (assuming they are numeric, otherwise cast first)
@@ -100,15 +116,18 @@ def clean_dataframe(df):
     df_clean = df_clean.drop("non_null_count")
 
     # 7. Reorder columns as specified in the instructions
-    """['id', 'title', 'tagline', 'release_date', 'genres', 'belongs_to_collection', 'original_language', 
+    cols_order = ['id', 'title', 'tagline', 'release_date', 'genres', 'belongs_to_collection', 'original_language', 
     'budget_musd', 'revenue_musd', 'production_companies', 'production_countries', 'vote_count', 
     'vote_average', 'popularity', 'runtime', 'overview', 'spoken_languages', 'poster_path', 
-    'cast', 'cast_size', 'director', 'crew_size']"""
+    'cast', 'cast_size', 'director', 'crew_size']
 
-    df_clean = df_clean.select(['id', 'title', 'tagline', 'release_date', 'genres', 'belongs_to_collection', 'original_language', 
-    'budget_musd', 'revenue_musd', 'production_companies', 'production_countries', 'vote_count', 
-    'vote_average', 'popularity', 'runtime', 'overview', 'spoken_languages', 'poster_path', 
-    'cast', 'cast_size', 'director', 'crew_size'])
+    existing_cols = [c for c in cols_order if c in df_clean.columns]
+    df_clean = df_clean.select(*existing_cols)
+    df_clean = df_clean.withColumn('roi', F.col('revenue_musd') / F.col('budget_musd'))
+    df_clean = df_clean.withColumn('profit_musd', F.col('revenue_musd') - F.col('budget_musd'))
 
-    print("Data cleaning completed.")
+    # Save Cleaned Data
+    df_clean.write.mode("overwrite").parquet("data/cleaned_parquet")
+    df_clean.write.mode("overwrite").option("header", "true").csv("data/cleaned_csv")
+    print("Cleaned data saved to data/cleaned_parquet and data/cleaned_csv")
     return df_clean
