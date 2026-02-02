@@ -4,22 +4,22 @@ A comprehensive data engineering and analysis pipeline for movie data fetched fr
 
 ## 🚀 Key Features
 
-### [1. Data Extraction](`models/extraction.py`)
+### [1. Data Extraction](models/extraction.py)
 - **Robust API Handling**: Fetches movie metadata with built-in retry logic for network stability.
 - **Multiprocessing**: Utilizes `ProcessPoolExecutor` for parallel data fetching, significantly speeding up batch operations.
 
-### [2. Advanced Data Cleaning](`models/cleaning.py`)
+### [2. Advanced Data Cleaning](models/cleaning.py)
 - **JSON Flattening**: Parses nested JSON fields (Genres, Production Companies, Cast/Crew) into usable formats.
 - **Schema Standardization**: Converts data types, handles missing values, and ensures consistent schema.
 - **Deduplication**: Smart handling of duplicate records and unhashable structures.
 
-### [3. Financial Analysis](`models/analysis.py`)
-- **Consolidated Reporting**: Generates a single comprehensive [`Report of analysis of key metrics`](`kpi_report.txt`) containing all key metrics.
+### [3. Financial Analysis](models/analysis.py)
+- **Consolidated Reporting**: Generates a single comprehensive [`Report of analysis of key metrics`](kpi_report.txt) containing all key metrics.
 - **KPI Calculation**: Computes ROI, Profit, and multi-currency adjustments.
 - **Comparative Analysis**: Franchise vs. Standalone movies.
 - **Director Metrics**: Aggregates performance metrics for top directors.
 
-### [4. Visualization](`models/visualization.py`)
+### [4. Visualization](models/visualization.py)
 Generates high-quality charts using **Seaborn** and **Matplotlib**:
 - **Revenue trends**: Budget vs. Revenue correlations.
 - **Genre Insights**: ROI distribution and average returns by genre.
