@@ -1,0 +1,402 @@
+TMDB MOVIE DATA ANALYSIS - SETUP & EXECUTION GUIDE
+==================================================
+
+This guide walks you through setting up and running the complete TMDB data analysis pipeline.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE 1: ENVIRONMENT SETUP (First Time Only)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Step 1.1: Verify Prerequisites
+------------------------------
+Ensure you have:
+✓ Python 3.8 or higher: python --version
+✓ Java (for Spark): java -version
+✓ Git (optional): git --version
+✓ At least 2GB free disk space
+
+Step 1.2: Clone/Navigate to Project
+------------------------------------
+Windows:
+  cd "C:\path\to\Spark-impl"
+
+Linux/Mac:
+  cd /path/to/Spark-impl
+
+Step 1.3: Create Virtual Environment
+-------------------------------------
+Windows:
+  python -m venv venv
+  venv\Scripts\activate
+
+Linux/Mac:
+  python3 -m venv venv
+  source venv/bin/activate
+
+Step 1.4: Install Dependencies
+-------------------------------
+pip install --upgrade pip
+pip install -r requirements.txt
+
+This installs:
+  - pyspark          (3.5+)        Apache Spark for distributed processing
+  - pandas           (2.0+)        Data manipulation
+  - matplotlib       (3.7+)        Visualization
+  - seaborn          (0.13+)       Statistical plots
+  - aiohttp          (3.8+)        Async HTTP client
+  - requests         (2.31+)       HTTP client
+  - python-dotenv    (1.0+)        Environment variable management
+  - pyarrow          (13.0+)       Columnar data format
+
+Expected time: 3-5 minutes
+
+Step 1.5: Configure API Credentials
+------------------------------------
+1. Go to https://www.themoviedb.org/settings/api
+2. Sign up and get your API key
+3. Create a .env file in the project root (Spark-impl/)
+4. Add: TMDB_API_KEY=your_actual_api_key_here
+5. Save the file
+
+Example .env file:
+  TMDB_API_KEY=abc123def456ghi789jkl012mno345pqr
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE 2: PIPELINE EXECUTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Option A: RUN COMPLETE PIPELINE (Recommended)
+----------------------------------------------
+python main.py
+
+This executes all 4 steps automatically:
+  1. API Data Ingestion     (~30-60 seconds)
+  2. Spark ETL              (~20-40 seconds)
+  3. KPI Analysis           (~10-20 seconds)
+  4. Visualization          (~5-10 seconds)
+
+Total time: ~1-2 minutes
+
+Expected output:
+  ✓ Started: Fetching Movie Data from API
+  ✓ Completed: Spark ETL Transformation
+  ✓ Completed: KPI Analysis Report
+  ✓ Completed: Visualization Generation
+
+  🎉 PIPELINE COMPLETED SUCCESSFULLY! 🎉
+
+Option B: RUN INDIVIDUAL STEPS (For Debugging)
+-----------------------------------------------
+
+Step 2A: Fetch Data from TMDB API
+  python -m model.ingestion.fetch_data
+  Output: data/raw/batch_*.json
+  Time: 30-60 seconds
+
+Step 2B: Transform with Spark ETL
+  python -m model.processing.etl
+  Output: data/processed/release_year=*/
+  Time: 20-40 seconds
+
+Step 2C: Generate KPI Report
+  python -m model.analytics.kpi
+  Output: output/kpi_analysis.txt
+  Time: 10-20 seconds
+
+Step 2D: Create Visualizations
+  python -c "from model.visualization.plots import create_all_visualizations; import pandas as pd; df = pd.read_parquet('data/processed'); create_all_visualizations(df, 'output/plots')"
+  Output: output/plots/*.png
+  Time: 5-10 seconds
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE 3: EXPLORE RESULTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+After pipeline completes, view your results:
+
+3.1: KPI Analysis Report
+------------------------
+cat output/kpi_analysis.txt
+
+Contains:
+  ✓ General statistics (total movies, avg rating, etc.)
+  ✓ Top 5 movies by revenue, profit, rating, popularity
+  ✓ Worst movies & lowest ROI
+  ✓ Advanced query results (Bruce Willis, Tarantino, Uma Thurman)
+  ✓ Franchise vs Standalone comparison
+  ✓ Top franchises analysis
+  ✓ Top directors ranking
+
+3.2: Visual Analysis (Jupyter Notebook)
+----------------------------------------
+jupyter notebook notebooks/analysis.ipynb
+
+Features:
+  ✓ Interactive data exploration
+  ✓ Custom filters and queries
+  ✓ Dynamic plotting
+  ✓ Real-time statistics
+
+Cells included:
+  1. Data Loading & Setup
+  2. Exploratory Data Analysis (EDA)
+  3. Advanced Filtering & Search Queries
+  4. Franchise vs Standalone Analysis
+  5. Top Directors Analysis
+  6. Genre Performance
+  7. Key Insights & Conclusions
+
+3.3: Generated Visualizations
+-----------------------------
+Open images in: output/plots/
+
+Eight plots created:
+  1. revenue_vs_budget.png
+     → Scatter plot showing budget vs revenue relationship
+     → Color-coded by release year, sized by vote count
+
+  2. roi_by_genre.png
+     → Box plot distribution of ROI across genres
+     → Shows profitability variance by genre
+
+  3. popularity_vs_rating.png
+     → Correlation between audience popularity and critical ratings
+     → Color intensity indicates revenue
+
+  4. yearly_trends.png
+     → Time series of average revenue, budget, and profit
+     → Identifies financial trends over years
+
+  5. franchise_vs_standalone.png
+     → Four-subplot comparison of franchise vs standalone movies
+     → Analyzes revenue, budget, rating, and count
+
+  6. rating_distribution.png
+     → Histogram of movie ratings with mean/median markers
+     → Shows quality distribution of dataset
+
+  7. top_directors.png
+     → Horizontal bar chart of top 10 directors by revenue
+     → Includes movie count per director
+
+  8. genre_performance.png
+     → Three-panel analysis: rating, revenue, and count by genre
+     → Identifies best-performing genres
+
+3.4: Access Raw Data
+---------------------
+Processed movie data in Parquet format:
+  data/processed/release_year=*/
+
+Load in Python:
+  import pandas as pd
+  df = pd.read_parquet('data/processed')
+  df.head()  # View first rows
+
+Or in PySpark:
+  from pyspark.sql import SparkSession
+  spark = SparkSession.builder.master("local[*]").getOrCreate()
+  df = spark.read.parquet("data/processed")
+  df.show()
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE 4: UNDERSTANDING THE DATA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Dataset Overview
+---------------
+Movies analyzed: 19 major films (as of last run)
+Date range: 1997-2022
+File format: Parquet (partitioned by release year)
+
+Key Columns in Processed Data:
+  id                      - Unique TMDB identifier
+  title                   - Movie name
+  release_year            - Year of release (partition key)
+  budget_musd             - Budget in millions USD
+  revenue_musd            - Revenue in millions USD
+  profit                  - Revenue - Budget (in millions USD)
+  roi                     - Return on Investment (Revenue / Budget)
+  vote_average            - Critical/audience rating (0-10, from TMDB)
+  vote_count              - Number of votes received
+  popularity              - Popularity score (from TMDB)
+  genres                  - Comma-separated genres (e.g., "Action|Adventure")
+  belongs_to_collection   - Franchise name (null if standalone)
+  director                - Primary director
+  cast                    - Lead actors (pipe-separated)
+  production_companies    - Studio names (pipe-separated)
+  production_countries    - Countries involved (pipe-separated)
+  spoken_languages        - Languages in film (pipe-separated)
+  runtime                 - Duration in minutes
+  overview                - Plot description
+
+Data Quality Notes:
+  ✓ Null/0 budgets/revenues converted to NaN
+  ✓ Dates standardized to datetime
+  ✓ Text fields cleaned of placeholders
+  ✓ Nested structures flattened
+  ✓ "Released" status movies only
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE 5: TROUBLESHOOTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Common Issues & Solutions
+--------------------------
+
+Issue: "error: TMDB_API_KEY is missing"
+Solution: 
+  1. Create .env file in project root
+  2. Add: TMDB_API_KEY=your_api_key
+  3. Save and restart the script
+
+Issue: "ModuleNotFoundError: No module named 'pyspark'"
+Solution:
+  1. Verify virtual environment is activated
+  2. Run: pip install -r requirements.txt
+  3. Wait for installation to complete
+
+Issue: "java.io.IOException: java.nio.file.NoSuchFileException: C:\hadoop\bin\winutils.exe"
+Solution:
+  The pipeline falls back to Pandas/PyArrow automatically.
+  If issues persist:
+    a) Download winutils.exe to C:\hadoop\bin\
+    b) Or run on WSL/Linux instead
+
+Issue: "Connection timeout" / "API Error 429"
+Solution:
+  The script includes retry logic with exponential backoff.
+  If still failing:
+    1. Check internet connection
+    2. Verify TMDB API is operational
+    3. Check rate limits (typically 40 requests/10 seconds)
+    4. Wait 10-15 minutes and try again
+
+Issue: "MemoryError" or "Spark OutOfMemory"
+Solution:
+  1. Close other applications
+  2. Reduce concurrent requests: Edit config.py, set INGESTION_CONCURRENCY = 3
+  3. Or increase available memory
+
+Issue: "No visualizations generated"
+Solution:
+  1. Verify processed data exists: check data/processed/
+  2. Ensure matplotlib/seaborn are installed: pip install matplotlib seaborn
+  3. Check plots directory: ls output/plots/
+  4. Try manual generation in Jupyter notebook
+
+Checking Logs
+--------------
+If errors occur, check detailed logs:
+
+  output/logs/ingestion.log    - API fetching details
+  output/logs/etl.log          - Spark transformation steps
+  output/logs/analytics.log    - Analysis execution
+  output/logs/project.log      - General workflow
+
+View recent logs:
+  tail -50 output/logs/project.log
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE 6: PROJECT STRUCTURE REFERENCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Core Modules
+-----------
+
+model/config.py
+  → Configuration constants
+  → Directory paths
+  → API settings
+  → Edit this to customize behavior
+
+model/logger.py
+  → Logging setup
+  → Creates timestamped logs
+
+model/ingestion/fetch_data.py
+  → Async TMDB API client
+  → Rate limiting with semaphore
+  → Exponential backoff retry logic
+  → Newline-delimited JSON output
+
+model/processing/schemas.py
+  → Spark DataFrame schemas
+  → Defines movie data structure
+  → Maps TMDB JSON to Spark types
+
+model/processing/etl.py
+  → Main Spark transformations
+  → Data cleaning logic
+  → Column calculations (ROI, profit, etc.)
+  → Parquet write with partitioning
+
+model/analytics/kpi.py
+  → KPI calculations and metrics
+  → Advanced filtering queries
+  → Franchise analysis
+  → Director analysis
+  → Report generation
+
+model/visualization/plots.py
+  → matplotlib/seaborn plots
+  → Eight different visualization types
+  → Creates high-resolution PNG images
+
+Main Execution
+--------------
+main.py
+  → Orchestrates entire pipeline
+  → Manages execution order
+  → Displays progress and summary
+  → Entry point for users
+
+notebooks/analysis.ipynb
+  → Interactive analysis environment
+  → Jupyter notebook format
+  → Cell-by-cell execution
+  → Custom plotting and filtering
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEXT STEPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+After successfully running the pipeline:
+
+1. ANALYZE RESULTS
+   → Read KPI report: cat output/kpi_analysis.txt
+   → Identify patterns and insights
+   → Note key metrics
+
+2. EXPLORE INTERACTIVELY
+   → Run Jupyter: jupyter notebook notebooks/analysis.ipynb
+   → Create custom queries
+   → Generate additional plots
+
+3. UNDERSTAND THE CODE
+   → Review model/ modules
+   → Study Spark transformations
+   → Learn data engineering patterns
+
+4. EXTEND FUNCTIONALITY
+   → Add new KPI calculations
+   → Create custom visualizations
+   → Implement additional filters
+
+5. SHARE INSIGHTS
+   → Export findings to reports
+   → Present visualizations
+   → Document conclusions
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✨ Ready to start? Run: python main.py
+
+Questions? Check README_COMPREHENSIVE.md for detailed documentation.
