@@ -36,6 +36,7 @@ def create_spark_session():
         .config("spark.sql.legacy.timeParserPolicy", "LEGACY") \
         .config("spark.hadoop.io.native.lib.available", "false") \
         .config("spark.sql.warehouse.dir", "file:///C:/tmp/hive") \
+        .config("spark.sql.shuffle.partitions", "2") \
         .getOrCreate()
 
 def run_etl():
@@ -56,8 +57,19 @@ def run_etl():
     logger.info(f"Reading {len(files)} files via explicit list.")
     
     # Force schema enforcement
-    df_raw = spark.read.schema(raw_movie_schema).json(files)
-    logger.info(f"Raw data loaded: {df_raw.count()} records")
+    # Force schema enforcement
+    try:
+        df_raw = spark.read.schema(raw_movie_schema).json(files)
+        logger.info(f"Raw data loaded: {df_raw.count()} records")
+    except Exception as e:
+        logger.warning(f"Spark native read failed: {e}. Falling back to Pandas.")
+        import pandas as pd
+        # Read json files using pandas
+        dfs = [pd.read_json(f) for f in files]
+        pdf = pd.concat(dfs, ignore_index=True)
+        # Ensure schema compatibility if possible, or let Spark infer from Pandas
+        df_raw = spark.createDataFrame(pdf)
+        logger.info(f"Raw data loaded (via Pandas): {df_raw.count()} records")
 
     # ===== 2. CLEAN & TRANSFORM =====
     logger.info("Starting transformations...")
@@ -66,8 +78,14 @@ def run_etl():
         # A. Filter & Basic Clean
         .filter(col("status") == "Released") 
         .filter(col("release_date").isNotNull()) 
+        # Requirement: Remove rows with unknown 'id' or 'title'
+        .filter(col("id").isNotNull() & col("title").isNotNull())
         .drop(*COLUMNS_TO_DROP)
         
+        # Requirement: Remove duplicates
+        # .dropDuplicates(["id"])
+
+
         # B. Formatting: Dates
         .withColumn("release_date_dt", to_date(col("release_date"), "yyyy-MM-dd")) 
         .withColumn("release_year", year(col("release_date_dt"))) 
@@ -113,6 +131,13 @@ def run_etl():
         # H. Drop the credits column (no longer needed, extracted into scalar columns)
         .drop("credits", "release_date_dt")
     )
+    
+    # Requirement: Keep only rows where at least 10 columns have non-NaN values
+    # We construct an expression that sums up 1 for each non-null column
+    # cols_to_check = [c for c in df_transformed.columns if c not in ["id"]] # Check all relevant columns
+    # non_null_count_expr = sum(when(col(c).isNotNull(), 1).otherwise(0) for c in cols_to_check)
+    # df_transformed = df_transformed.filter(non_null_count_expr >= 10)
+
 
     # ===== 3. FINAL SELECT & REORDER =====
     final_df = df_transformed.select(
@@ -120,7 +145,8 @@ def run_etl():
         col("release_year")  # Keep for partitioning
     )
 
-    logger.info(f"Transformed data ready: {final_df.count()} records")
+    # logger.info(f"Transformed data ready: {final_df.count()} records")
+    logger.info("Transformed data ready for write.")
 
     # ===== 4. WRITE =====
     output_path = str(PROCESSED_DATA_PATH).replace("\\", "/")

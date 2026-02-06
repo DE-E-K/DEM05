@@ -1,0 +1,166 @@
+================================================================================
+TMDB MOVIE DATA ANALYSIS REPORT
+================================================================================
+
+1. GENERAL STATISTICS
+--------------------------------------------------------------------------------
+Total Movies Analyzed: 18
+Average Budget: $213.78 Million MUSD
+Average Revenue: $1,691.83 Million MUSD
+Average Rating: 7.40/10
+
+2. TOP PERFORMING MOVIES
+--------------------------------------------------------------------------------
+
+2.1 Highest Revenue (Top 5):
+  1. Avatar (2009): $2,923.71M
+  2. Avengers: Endgame (2019): $2,799.44M
+  3. Titanic (1997): $2,264.16M
+  4. Star Wars: The Force Awakens (2015): $2,068.22M
+  5. Avengers: Infinity War (2018): $2,052.42M
+
+2.2 Highest Profit (Top 5):
+  1. Avatar: $2,686,706,026 (Budget: $237.00M, Revenue: $2,923.71M)
+  2. Avengers: Endgame: $2,443,439,100 (Budget: $356.00M, Revenue: $2,799.44M)
+  3. Titanic: $2,064,162,353 (Budget: $200.00M, Revenue: $2,264.16M)
+  4. Star Wars: The Force Awakens: $1,823,223,624 (Budget: $245.00M, Revenue: $2,068.22M)
+  5. Avengers: Infinity War: $1,752,415,039 (Budget: $300.00M, Revenue: $2,052.42M)
+
+2.3 Lowest Profit (Top 5):
+  1. Star Wars: The Last Jedi: $1,032,698,830 (Budget: $300.00M)
+  2. Incredibles 2: $1,043,225,667 (Budget: $200.00M)
+  3. Beauty and the Beast: $1,106,115,964 (Budget: $160.00M)
+  4. Frozen: $1,124,219,009 (Budget: $150.00M)
+  5. Jurassic World: Fallen Kingdom: $1,140,469,037 (Budget: $170.00M)
+
+2.4 Highest ROI - Budget ≥ $10M (Top 5):
+  1. Avatar: 12.34x (+1134%) | Budget: $237.00M
+  2. Titanic: 11.32x (+1032%) | Budget: $200.00M
+  3. Jurassic World: 11.14x (+1014%) | Budget: $150.00M
+  4. Harry Potter and the Deathly Hallows: Part 2: 10.73x (+973%) | Budget: $125.00M
+  5. Frozen II: 9.69x (+869%) | Budget: $150.00M
+
+2.5 Lowest ROI - Budget ≥ $10M (Top 5):
+  1. Star Wars: The Last Jedi: 4.44x (+344%) | Budget: $300.00M
+  2. Avengers: Age of Ultron: 5.98x (+498%) | Budget: $235.00M
+  3. Incredibles 2: 6.22x (+522%) | Budget: $200.00M
+  4. The Lion King: 6.39x (+539%) | Budget: $260.00M
+  5. Black Panther: 6.75x (+575%) | Budget: $200.00M
+
+3. CRITICAL & AUDIENCE RATINGS
+--------------------------------------------------------------------------------
+
+3.1 Most Voted Movies (Top 5):
+  1. The Avengers: 35,665 votes | Rating: 7.9/10
+  2. Avatar: 33,393 votes | Rating: 7.6/10
+  3. Avengers: Infinity War: 31,426 votes | Rating: 8.2/10
+  4. Avengers: Endgame: 27,208 votes | Rating: 8.2/10
+  5. Titanic: 26,734 votes | Rating: 7.9/10
+
+3.2 Highest Rated Movies (min. 10 votes) (Top 5):
+  1. Avengers: Endgame: 8.2/10 (27,208 votes)
+  2. Avengers: Infinity War: 8.2/10 (31,426 votes)
+  3. Harry Potter and the Deathly Hallows: Part 2: 8.1/10 (21,644 votes)
+  4. The Avengers: 7.9/10 (35,665 votes)
+  5. Titanic: 7.9/10 (26,734 votes)
+
+3.3 Lowest Rated Movies (min. 10 votes) (Top 5):
+  1. Jurassic World: Fallen Kingdom: 6.5/10 (12,526 votes)
+  2. Jurassic World: 6.7/10 (21,281 votes)
+  3. Star Wars: The Last Jedi: 6.8/10 (16,068 votes)
+  4. Beauty and the Beast: 7.0/10 (15,894 votes)
+  5. The Lion King: 7.1/10 (10,627 votes)
+
+3.4 Most Popular Movies (Top 5):
+  1. The Avengers (2012): Popularity Score 50.00
+  2. Avatar (2009): Popularity Score 40.46
+  3. Titanic (1997): Popularity Score 30.85
+  4. Avengers: Infinity War (2018): Popularity Score 25.56
+  5. Frozen (2013): Popularity Score 19.11
+
+4. ADVANCED FILTERING & SEARCH QUERIES
+--------------------------------------------------------------------------------
+
+4.1 Sci-Fi Action Movies starring Bruce Willis (sorted by rating):
+  No movies found matching criteria.
+
+4.2 Movies starring Uma Thurman directed by Quentin Tarantino (sorted by runtime):
+  No movies found matching criteria.
+
+5. FRANCHISE VS STANDALONE ANALYSIS
+--------------------------------------------------------------------------------
+
+Franchise Movies: 16
+Standalone Movies: 2
+
+Franchise Movies Metrics:
+  - Mean Revenue: $1,682.67M
+  - Median ROI: 7.71x
+  - Mean Budget: $218.00M
+  - Mean Popularity: 16.86
+  - Mean Rating: 7.39/10
+
+Standalone Movies Metrics:
+  - Mean Revenue: $1,765.14M
+  - Median ROI: 7.91x
+  - Mean Budget: $180.00M
+  - Mean Popularity: 20.30
+  - Mean Rating: 7.44/10
+
+6. MOST SUCCESSFUL FRANCHISES
+--------------------------------------------------------------------------------
+
+Top 10 Franchises by Total Revenue (min. 2 movies):
+
+  1. The Avengers Collection
+     - Movies: 4
+     - Total Budget: $1,111.00M | Mean: $277.75M
+     - Total Revenue: $7,776.07M | Mean: $1,944.02M
+     - Mean Rating: 7.93/10
+
+  2. Star Wars Collection
+     - Movies: 2
+     - Total Budget: $545.00M | Mean: $272.50M
+     - Total Revenue: $3,400.92M | Mean: $1,700.46M
+     - Mean Rating: 7.01/10
+
+  3. Jurassic Park Collection
+     - Movies: 2
+     - Total Budget: $320.00M | Mean: $160.00M
+     - Total Revenue: $2,982.01M | Mean: $1,491.00M
+     - Mean Rating: 6.62/10
+
+  4. Frozen Collection
+     - Movies: 2
+     - Total Budget: $300.00M | Mean: $150.00M
+     - Total Revenue: $2,727.90M | Mean: $1,363.95M
+     - Mean Rating: 7.24/10
+
+7. MOST SUCCESSFUL DIRECTORS
+--------------------------------------------------------------------------------
+
+Top 10 Directors by Total Revenue:
+  1. James Cameron
+     - Movies: 2 | Total Revenue: $5,187.87M | Mean Rating: 7.75/10
+  2. Joss Whedon
+     - Movies: 2 | Total Revenue: $2,924.22M | Mean Rating: 7.62/10
+  3. Joe Russo
+     - Movies: 1 | Total Revenue: $2,799.44M | Mean Rating: 8.24/10
+  4. J.J. Abrams
+     - Movies: 1 | Total Revenue: $2,068.22M | Mean Rating: 7.25/10
+  5. Anthony Russo
+     - Movies: 1 | Total Revenue: $2,052.42M | Mean Rating: 8.23/10
+  6. Colin Trevorrow
+     - Movies: 1 | Total Revenue: $1,671.54M | Mean Rating: 6.70/10
+  7. Jon Favreau
+     - Movies: 1 | Total Revenue: $1,662.02M | Mean Rating: 7.10/10
+  8. James Wan
+     - Movies: 1 | Total Revenue: $1,515.40M | Mean Rating: 7.22/10
+  9. Jennifer Lee
+     - Movies: 1 | Total Revenue: $1,453.68M | Mean Rating: 7.24/10
+  10. Ryan Coogler
+     - Movies: 1 | Total Revenue: $1,349.93M | Mean Rating: 7.36/10
+
+================================================================================
+END OF REPORT
+================================================================================

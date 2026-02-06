@@ -1,6 +1,6 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import (
-    col, desc, asc, avg, count, sum, median, when, expr
+    col, desc, asc, avg, count, sum, when, expr, lit
 )
 from model.config import (
     SPARK_APP_NAME, SPARK_MASTER, 
@@ -14,18 +14,27 @@ logger = get_logger(__name__)
 
 def create_spark_session():
     """Creates a Spark session with Windows compatibility."""
+    import sys
+    import os
+    
     if sys.platform == "win32":
         hadoop_home = "C:/hadoop"
         os.environ["HADOOP_HOME"] = hadoop_home
         if f"{hadoop_home}/bin" not in os.environ["PATH"].replace("\\", "/"):
             os.environ["PATH"] = f"{hadoop_home}/bin;" + os.environ["PATH"]
 
-    return SparkSession.builder \
+    builder = SparkSession.builder \
         .appName(SPARK_APP_NAME + "_Analytics") \
         .master(SPARK_MASTER) \
-        .config("spark.sql.warehouse.dir", "file:///C:/tmp/hive") \
-        .getOrCreate()
+        .config("spark.hadoop.fs.file.impl", "org.apache.hadoop.fs.LocalFileSystem") \
+        .config("spark.sql.parquet.compression.codec", "snappy")
 
+    if sys.platform == "win32":
+        builder = builder.config("spark.sql.warehouse.dir", "file:///C:/tmp/hive")
+    else:
+        builder = builder.config("spark.sql.warehouse.dir", "/tmp/hive")
+
+    return builder.getOrCreate()
 
 def generate_report(spark):
     """Generate comprehensive KPI analysis report."""
@@ -35,13 +44,47 @@ def generate_report(spark):
     data_path = str(PROCESSED_DATA_PATH).replace("\\", "/")
     logger.info(f"Loading data from: {data_path}")
     
+    df = None
     try:
         df = spark.read.parquet(data_path)
         count_val = df.count()
-        logger.info(f"Successfully loaded {count_val} records.")
+        logger.info(f"Successfully loaded {count_val} records using Spark.")
     except Exception as e:
-        logger.error(f"Failed to read Parquet data: {e}")
+        logger.warning(f"Spark Native Read Failed: {e}")
+        logger.info("Falling back to Pandas/PyArrow fallback for Windows compatibility.")
+        try:
+            import pandas as pd
+            import os
+            # Find all parquet files in the processed directory and its subdirectories
+            parquet_files = []
+            for root, dirs, files in os.walk(str(PROCESSED_DATA_PATH)):
+                for file in files:
+                    if file.endswith('.parquet'):
+                        parquet_files.append(os.path.join(root, file))
+            
+            if parquet_files:
+                dfs = [pd.read_parquet(f) for f in parquet_files]
+                pdf = pd.concat(dfs, ignore_index=True)
+                count_val = len(pdf)
+                logger.info(f"Successfully loaded {count_val} records using Pandas/PyArrow.")
+                # Convert pandas df to spark df
+                df = spark.createDataFrame(pdf)
+            else:
+                logger.error("No Parquet files found in processed data directory.")
+                return
+        except Exception as e2:
+            logger.error(f"Pandas fallback also failed: {e2}")
+            return
+    
+    if df is None:
+        logger.error("Failed to load data.")
         return
+
+# Ensure director column exists so downstream grouping is safe
+    if 'director' not in df.columns:
+        df = df.withColumn('director', lit('Unknown'))
+    else:
+        df = df.withColumn('director', when(col('director').isNull(), lit('Unknown')).otherwise(col('director')))
 
     report_lines = []
     report_lines.append("=" * 80)
@@ -212,7 +255,7 @@ def generate_report(spark):
     if franchise_count > 0:
         franchise_metrics = franchise_df.agg(
             avg("revenue_musd").alias("avg_revenue"),
-            median("roi").alias("median_roi"),
+            expr("percentile_approx(roi, 0.5)").alias("median_roi"),
             avg("budget_musd").alias("avg_budget"),
             avg("popularity").alias("avg_popularity"),
             avg("vote_average").alias("avg_rating")
@@ -227,7 +270,7 @@ def generate_report(spark):
     if standalone_count > 0:
         standalone_metrics = standalone_df.agg(
             avg("revenue_musd").alias("avg_revenue"),
-            median("roi").alias("median_roi"),
+            expr("percentile_approx(roi, 0.5)").alias("median_roi"),
             avg("budget_musd").alias("avg_budget"),
             avg("popularity").alias("avg_popularity"),
             avg("vote_average").alias("avg_rating")
