@@ -1,17 +1,33 @@
 # Real-Time E-Commerce Data Streaming Pipeline
 
-A **production-grade real-time data pipeline** that ingests simulated e-commerce events, processes them with Apache Spark Structured Streaming, and persists them in PostgreSQL.
+A **Real-time data pipeline** that ingests simulated e-commerce events, processes them with Apache Spark Structured Streaming, and persists them in PostgreSQL.
 
 > Built for learning enterprise streaming architecture, data transformation, and database integration.
 
-Table of contents:
-1. [Quick start](##quick-start)
-2. [What this project does](##what-this-project-does)
-3. [Key features](##key-features)
-4. [Project structure](##project-structure)
-5. [Architecture overview](##architecture-overview)
-6. [Technology stack](##technology-stack)
-7. [How it works](##how-it-works)
+
+## Table of Contents
+1. [Quick Start](#quick-start)
+2. [What This Project Does](#what-this-project-does)
+3. [Key Features](#key-features)
+4. [Project Structure](#project-structure)
+5. [Architecture Overview](#architecture-overview)
+6. [Technology Stack](#technology-stack)
+7. [How It Works](#how-it-works)
+8. [Running the Pipeline](#running-the-pipeline)
+9. [Configuration](#configuration)
+10. [Monitoring & Visualization](#monitoring--visualization)
+11. [Performance Metrics](#performance-metrics)
+12. [Testing](#testing)
+13. [Troubleshooting](#troubleshooting)
+14. [Documentation](#documentation)
+15. [Learning Outcomes](#learning-outcomes)
+16. [Scaling to Production](#scaling-to-production)
+17. [Next Steps](#next-steps)
+18. [Support & Troubleshooting](#support--troubleshooting)
+19. [Key Files](#key-files)
+20. [Project Statistics](#project-statistics)
+21. [License & Attribution](#license--attribution)
+22. [Questions?](#questions)
 
 ## Quick Start
 
@@ -110,26 +126,26 @@ PostgreSQL Database
     • PK constraint (duplicate prevention)
 ```
 
-**Learn more**: See [docs/system_architecture.txt](docs/system_architecture.txt)
+**Learn more**: See [System Architecture](docs/system_architecture.txt)
 
 ---
 
 ## Getting Started
 
 ### New Users?
-👉 **Start here**: [docs/walkthrough.md](docs/walkthrough.md) - Step-by-step walkthrough
+👉 **Start here**: [Walkthrough](docs/walkthrough.md) - Step-by-step walkthrough
 
 ### Want Full Details?
-👉 [docs/user_guide.md](docs/user_guide.md) - Setup, configuration, troubleshooting
+👉 [User Guide](docs/user_guide.md) - Setup, configuration, troubleshooting
 
 ### Need to Understand the Design?
-👉 [docs/project_overview.md](docs/project_overview.md) - Complete project overview with architecture
+👉 [Project Overview](docs/project_overview.md) - Complete project overview with architecture
 
 ### Want to Test Everything?
-👉 [docs/test_cases.md](docs/test_cases.md) - 16 manual test cases
+👉 [Test Cases](docs/test_cases.md) - 16 manual test cases
 
 ### Curious About Performance?
-👉 [docs/performance_metrics.md](docs/performance_metrics.md) - Benchmarks and optimization tips
+👉 [Performance Metrics](docs/performance_metrics.md) - Benchmarks and optimization tips
 
 ---
 
@@ -280,7 +296,7 @@ View:
 | **Memory** | ~2 GB | Spark driver + PostgreSQL |
 | **CPU** | <80% | On 4-core system under normal load |
 
-**Full benchmark**: See [docs/performance_metrics.md](docs/performance_metrics.md)
+**Full benchmark**: See [Performance Metrics](docs/performance_metrics.md)
 
 ---
 
@@ -289,14 +305,14 @@ View:
 ### Automated Test Plan
 
 16 test cases covering:
-- ✅ Environment setup
-- ✅ Data generation
-- ✅ Spark integration
-- ✅ Database persistence
-- ✅ Error handling
-- ✅ Performance
+- Environment setup
+- Data generation
+- Spark integration
+- Database persistence
+- Error handling
+- Performance
 
-Execute: See [docs/test_cases.md](docs/test_cases.md)
+Execute: See [Test Cases](docs/test_cases.md)
 
 ### Manual Testing
 
@@ -326,7 +342,7 @@ psql -d ecommerce_streaming \
 | Spark job won't start | Verify Java is installed, HADOOP_HOME set (Windows) |
 | No data in database | Check Spark logs for errors, verify table exists |
 
-**Full guide**: See [docs/user_guide.md#troubleshooting](docs/user_guide.md#troubleshooting)
+**Full guide**: See [User Guide - Troubleshooting](docs/user_guide.md#troubleshooting)
 
 ---
 
@@ -334,13 +350,13 @@ psql -d ecommerce_streaming \
 
 | Document | Purpose |
 |----------|---------|
-| [user_guide.md](docs/user_guide.md) | Complete setup and operation guide |
-| [walkthrough.md](docs/walkthrough.md) | Step-by-step walkthrough for beginners |
-| [project_overview.md](docs/project_overview.md) | Architecture, features, design decisions |
-| [system_architecture.txt](docs/system_architecture.txt) | Technical deep-dive into each component |
-| [test_cases.md](docs/test_cases.md) | 16 comprehensive test cases |
-| [performance_metrics.md](docs/performance_metrics.md) | Benchmarks, bottlenecks, optimization |
-| [folder_structure.md](docs/folder_structure.md) | Directory guide and file purposes |
+| [User Guide](docs/user_guide.md) | Complete setup and operation guide |
+| [Walkthrough](docs/walkthrough.md) | Step-by-step walkthrough for beginners |
+| [Project Overview](docs/project_overview.md) | Architecture, features, design decisions |
+| [System Architecture](docs/system_architecture.txt) | Technical deep-dive into each component |
+| [Test Cases](docs/test_cases.md) | 16 comprehensive test cases |
+| [Performance Metrics](docs/performance_metrics.md) | Benchmarks, bottlenecks, optimization |
+| [Folder Structure](docs/folder_structure.md) | Directory guide and file purposes |
 
 ---
 
@@ -371,27 +387,27 @@ By completing this project, you'll understand:
 2. **Cloud deployment** (AWS EMR + RDS) → Unlimited scale
 3. **Add Kafka** for buffering → Handle spiky traffic
 
-**See**: [docs/system_architecture.txt#scaling](docs/system_architecture.txt#scaling-considerations)
+**See**: [System Architecture - Scaling](docs/system_architecture.txt#scaling-considerations)
 
 ---
 
 ## Next Steps
 
 1. **✅ Start here**: Run the [Quick Start](#quick-start-5-minutes) above
-2. **📖 Learn**: Read [docs/walkthrough.md](docs/walkthrough.md) for detailed steps
-3. **🧪 Test**: Follow [docs/test_cases.md](docs/test_cases.md)
-4. **📊 Optimize**: Review [docs/performance_metrics.md](docs/performance_metrics.md)
-5. **🏗️ Understand**: Study [docs/system_architecture.txt](docs/system_architecture.txt)
+2. **📖 Learn**: Read [Walkthrough](docs/walkthrough.md) for detailed steps
+3. **🧪 Test**: Follow [Test Cases](docs/test_cases.md)
+4. **📊 Optimize**: Review [Performance Metrics](docs/performance_metrics.md)
+5. **🏗️ Understand**: Study [System Architecture](docs/system_architecture.txt)
 
 ---
 
 ## Support & Troubleshooting
 
-- **How do I start?** → See [user_guide.md](docs/user_guide.md#prerequisites)
-- **Something's not working** → Check [user_guide.md#troubleshooting](docs/user_guide.md#troubleshooting)
-- **I need step-by-step** → Follow [walkthrough.md](docs/walkthrough.md)
-- **What's the design?** → Read [system_architecture.txt](docs/system_architecture.txt)
-- **How do I test?** → See [test_cases.md](docs/test_cases.md)
+- **How do I start?** → See [User Guide - Prerequisites](docs/user_guide.md#prerequisites)
+- **Something's not working** → Check [User Guide - Troubleshooting](docs/user_guide.md#troubleshooting)
+- **I need step-by-step** → Follow [Walkthrough](docs/walkthrough.md)
+- **What's the design?** → Read [System Architecture](docs/system_architecture.txt)
+- **How do I test?** → See [Test Cases](docs/test_cases.md)
 
 ---
 
@@ -407,11 +423,11 @@ By completing this project, you'll understand:
 
 ## Project Statistics
 
-- 📝 **900 LOC** - Python production code
-- 📚 **1,500 lines** - Comprehensive documentation
-- ✅ **16 test cases** - Full test coverage
-- ⚡ **3 components** - Data gen, Spark, PostgreSQL
-- 🚀 **Production-ready** - Error handling, logging, best practices
+- **900 LOC** - Python production code
+- **1,500 lines** - Comprehensive documentation
+- **16 test cases** - Full test coverage
+- **3 components** - Data gen, Spark, PostgreSQL
+- **Production-ready** - Error handling, logging, best practices
 
 ---
 
@@ -424,15 +440,14 @@ This project is for educational purposes (specialization coursework).
 ## Questions?
 
 Refer to the appropriate documentation:
-- 🚀 **Getting started?** → [user_guide.md](docs/user_guide.md)
-- 📖 **Step-by-step?** → [walkthrough.md](docs/walkthrough.md)
-- 🏗️ **Architecture?** → [system_architecture.txt](docs/system_architecture.txt)
-- 🧪 **Testing?** → [test_cases.md](docs/test_cases.md)
-- 📊 **Performance?** → [performance_metrics.md](docs/performance_metrics.md)
-- 📁 **Files?** → [folder_structure.md](docs/folder_structure.md)
+- 🚀 **Getting started?** → [User Guide](docs/user_guide.md)
+- 📖 **Step-by-step?** → [Walkthrough](docs/walkthrough.md)
+- 🏗️ **Architecture?** → [System Architecture](docs/system_architecture.txt)
+- 🧪 **Testing?** → [Test Cases](docs/test_cases.md)
+- 📊 **Performance?** → [Performance Metrics](docs/performance_metrics.md)
+- 📁 **Files?** → [Folder Structure](docs/folder_structure.md)
 
 ---
 
-**Status**: ✅ Complete and ready for use  
 **Last Updated**: February 2026  
 **Version**: 1.0
