@@ -1,0 +1,25 @@
+# Generated data (too large, regenerable)
+data/input_data/**
+data/checkpoint/**
+
+# Logs
+*.log
+data/logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Python
+__pycache__/
+*.pyc
+venv/
+env/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Confidential # IMPORTANT: Don't commit passwords!
+config/postgres_connection_details.txt

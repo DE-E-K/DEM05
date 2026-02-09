@@ -1,0 +1,508 @@
+# System Architecture: Real-Time E-Commerce Streaming Pipeline
+
+## High-Level Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        DATA GENERATION LAYER                             │
+└──────────────────────────┬──────────────────────────────────────────────┘
+                           │
+                           │ Python Script
+                           │ (data_generator.py)
+                           │ • Generates fake events
+                           │ • UUID + Random attributes
+                           │ • Timestamp normalization
+                           │ • CSV file output
+
+┌──────────────────────────▼──────────────────────────────────────────────┐
+│                       DATA STAGING LAYER                                │
+│                  data/input_data/ Directory                             │
+│    (Monitored by Spark for new file arrivals)                           │
+│                                                                         │
+│  events_1707370245_0.csv        50-100 records                          │
+│  events_1707370248_1.csv        50-100 records                          │
+│  events_1707370251_2.csv        50-100 records                          │
+│  ...                                                                    │
+└──────────────────────────┬──────────────────────────────────────────────┘
+                           │
+                           │ Spark readStream
+                           │ • Polls directory every 30 sec
+                           │ • Detects new CSV files
+                           │ • Reads with defined schema
+
+┌──────────────────────────▼─────────────────────────────────────────────┐
+│                    STREAM PROCESSING LAYER                             │
+│              Apache Spark Structured Streaming                         │
+│                                                                        │
+│  ┌──────────────────┐                  ┌──────────────────────┐        │
+│  │ CSV Reader       │                  │ Data Transformer     │        │
+│  │                  │───────────────▶ │                      │        |
+│  │ • Schema match   │                  │ • Validate schema    │        │
+│  │ • Type coercion  │                  │ • Filter nulls       │        │
+│  │ • Header parsing │                  │ • Deduplicate rows   │        │
+│  └──────────────────┘                  └──────────────────────┘        │
+│                                                │                       │
+│                                                ▼                       │
+│                                        ┌──────────────┐                │
+│                                        │ Micro-batch  │                │
+│                                        │ (30 sec)     │                │
+│                                        └──────────────┘                │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+                                    │ JDBC Connection Pool
+                                    │ (org.postgresql:postgresql:42.7.3)
+                                    │ • 10 concurrent connections
+                                    │ • Batch insert mode
+                                    │ • 1000 records/batch
+
+┌──────────────────────────┬─────────────────────────────────────────────┐
+│                          │ PERSISTENCE LAYER                           │
+│                          │                                             │
+│                    PostgreSQL Database                                 │
+│                 ecommerce_streaming (DB)                               │
+│                                                                        │
+│    ┌────────────────────────────────────────────────────────────────┐  │
+│    │ events Table                                                   │  │
+│    │ ┌──────────────────────────────────────────────────────────┐   │  │
+│    │ │ Column           │ Type        │ Constraints/Index       │   │  │
+│    │ ├──────────────────┼─────────────┼─────────────────────────┤   │  │
+│    │ │ event_id         │ UUID        │ PRIMARY KEY             │   │  │
+│    │ │ event_type       │ VARCHAR(50) │ idx_events_event_type   │   │  │
+│    │ │ product_id       │ VARCHAR(100)│ idx_events_product_id   │   │  │
+│    │ │ user_id          │ VARCHAR(100)│ idx_events_user_id      │   │  │
+│    │ │ event_timestamp  │ TIMESTAMP   │ idx_events_timestamp    │   │  │
+│    │ │ quantity         │ INTEGER     │                         │   │  │
+│    │ │ price            │ NUMERIC     │                         │   │  │
+│    │ │ created_at       │ TIMESTAMP   │ DEFAULT NOW()           │   │  │
+│    │ └──────────────────────────────────────────────────────────┘   │  │
+│    │                                                                │  │
+│    │ Indexes: 4 covering event_type, user_id, product_id, timestamp │  │
+│    └────────────────────────────────────────────────────────────────┘  │
+│                                                                        │
+│    ┌────────────────────────────────────────────────────────────────┐  │
+│    │ data/ Checkpoint Directory (Spark)                             │  │
+│    │ • Tracks processed files                                       │  │
+│    │ • Enables exactly-once semantics                               │  │
+│    │ • Auto-cleanup after successful batch                          │  │
+│    └────────────────────────────────────────────────────────────────┘  │
+└────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    MONITORING & OPERATIONS LAYER                        │
+│                                                                         │
+│  ┌──────────────────────┐  ┌──────────────────────┐  ┌───────────────┐  │
+│  │ Application Logging  │  │ Spark UI             │  │ Database Logs │  │
+│  │                      │  │ (port 4040)          │  │               │  │
+│  │ • data_generator.log │  │ • Jobs               │  │ • Slow query  │  │
+│  │ • Spark console      │  │ • Stages             │  │ • Errors      │  │
+│  │ • Error tracking     │  │ • Executors          │  │ • Warnings    │  │
+│  └──────────────────────┘  └──────────────────────┘  └───────────────┘  │
+│                                                                         │
+│  ┌─────────────────────────────────────────────────────────────────────┐│
+│  │ Manual Monitoring Queries                                           ││
+│  │ • SELECT COUNT(*) FROM events;                                      ││
+│  │ • SELECT event_type, COUNT(*) FROM events GROUP BY event_type;      ││
+│  │ • SELECT MAX(event_timestamp) FROM events;                          ││
+│  └─────────────────────────────────────────────────────────────────────┘│
+│                                                                         │
+│  ┌─────────────────────────────────────────────────────────────────────┐│
+│  │ Performance Metrics Tracking                                        ││
+│  │ • Batch processing latency                                          ││
+│  │ • Records per second                                                ││
+│  │ • CPU/Memory utilization                                            ││
+│  │ • Database insert latency                                           ││
+│  └─────────────────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Component Details
+
+### 1. Data Generator (`src/data_generator.py`)
+
+**Purpose**: Simulate real e-commerce events
+
+**Workflow**:
+```
+┌─────────────────────────┐
+│ Initialize Config       │
+│ (parse CLI args)        │
+└────────────┬────────────┘
+             │
+             ▼
+┌─────────────────────────┐     ┌──────────────────────────┐
+│ Generate Events         │───▶ │ Sample Data:             │
+│ • UUID for event_id     │     │ • event_type: view       │
+│ • Random event_type     │     │ • product_id: product_1  │
+│ • Random product_id     │     │ • user_id: user_1000     │
+│ • Random user_id        │     │ • timestamp: now()       │
+│ • Current timestamp     │     │ • price: random(5-999)   │
+│ • Quantity/price (if    │     └──────────────────────────┘
+│   purchase event)       │
+└────────────┬────────────┘
+             │
+             ▼
+┌─────────────────────────────────┐
+│ Write CSV File                  │
+│ Format: CSV with headers        │
+│ Location: data/input_data/      │
+│ Naming: events_<timestamp>      │
+└────────────┬────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────┐
+│ Sleep (configurable)            │
+│ Default: 2 seconds              │
+│ Range: 0.1 to 60+ seconds       │
+└────────────┬────────────────────┘
+             │
+             ▼
+        Repeat or Exit
+```
+
+**Key Design Decisions**:
+- UUID generation ensures global uniqueness
+- Timestamps in ISO format (YYYY-MM-DD HH:MM:SS) for Spark compatibility
+- Configurable file generation rate (command-line args)
+- Infinite loop by default (exit via Ctrl+C)
+- Logging for observability
+
+---
+
+### 2. Stream Processing Engine (`src/spark_streaming_to_postgres.py`)
+
+**Purpose**: Real-time transformation and loading of event data
+
+**Workflow**:
+```
+┌──────────────────────────────┐
+│ Initialize Spark Session     │
+│ • Load JDBC driver           │
+│ • Configure parallelism      │
+│ • Set log level              │
+└──────────────┬───────────────┘
+               │
+               ▼
+┌──────────────────────────────────────┐
+│ Load Configuration                   │
+│ • Read postgres_connection_details   │
+│ • Parse credentials                  │
+│ • Validate database connectivity     │
+└──────────────┬───────────────────────┘
+               │
+               ▼
+┌──────────────────────────────────────┐
+│ Define Schema                        │
+│ StructType with 7 fields:            │
+│ • event_id: UUID                     │
+│ • event_type: String                 │
+│ • product_id: String                 │
+│ • user_id: String                    │
+│ • event_timestamp: Timestamp         │
+│ • quantity: Integer                  │
+│ • price: Double                      │
+└──────────┬───────────────────────────┘
+           │
+           ▼
+┌─────────────────────────────────┐
+│ Create Streaming DataFrame      │
+│ • Monitor: data/input_data/     │
+│ • Read: CSV files               │
+│ • Apply: schema validation      │
+└─────────────┬───────────────────┘
+              │
+              ▼
+┌──────────────────────────────────┐
+│ Transformation Pipeline          │
+│ 1. Filter: null event_ids        │
+│ 2. Deduplicate: by event_id      │
+│ 3. Select: all columns           │
+└─────────────┬────────────────────┘
+              │
+              ▼
+┌────────────────────────────────────┐
+│ Trigger & Batch Creation           │
+│ • Interval: 30 seconds             │
+│ • Outputs: update (matched rows)   │
+│ • Collects: all transformed rows   │
+│ • Writes checkpoint metadata       │
+└─────────────┬──────────────────────┘
+              │
+              ▼
+┌────────────────────────────────────┐
+│ JDBC Write (Per Batch)             │
+│ • Establish connection pool        │
+│ • Batch size: 1000 records         │
+│ • Mode: append                     │
+│ • Retry: 3 times on failure        │
+└─────────────┬──────────────────────┘
+              │
+              ▼
+┌────────────────────────────────────┐
+│ Database Write Success             │
+│ • Insert into events table         │
+│ • Log batch metrics                │
+│ • Update checkpoint                │
+└────────────────────────────────────┘
+```
+
+**Key Design Decisions**:
+- Structured Streaming for fault tolerance
+- Checkpoint mechanism for exactly-once semantics
+- dropDuplicates() ensures no duplicate events
+- JDBC batch mode for efficient writes
+- 30-second trigger balances latency vs throughput
+
+---
+
+### 3. Data Storage Architecture (PostgreSQL)
+
+**Schema Design**:
+```sql
+CREATE TABLE events (
+    event_id UUID PRIMARY KEY,
+    -- Uniqueness guaranteed by event_id
+    
+    event_type VARCHAR(50) NOT NULL,
+    product_id VARCHAR(100) NOT NULL,
+    user_id VARCHAR(100) NOT NULL,
+    event_timestamp TIMESTAMP NOT NULL,
+    
+    -- Purchase-specific fields (nullable for non-purchase events)
+    quantity INTEGER,
+    price NUMERIC(10,2),
+    
+    -- Operational metadata
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes optimized for common queries
+CREATE INDEX idx_events_event_type ON events(event_type);
+CREATE INDEX idx_events_user_id ON events(user_id);
+CREATE INDEX idx_events_product_id ON events(product_id);
+CREATE INDEX idx_events_timestamp ON events(event_timestamp);
+```
+
+**Design Rationale**:
+- UUID as primary key: Prevents duplicates from streaming re-runs
+- VARCHAR for flexible identifier storage
+- TIMESTAMP for event_timestamp: Enables time-series queries
+- Separate indexes for each dimension: Supports analytics queries
+- created_at metadata: Tracks insertion timing
+
+**Storage Characteristics**:
+- Estimated: ~500 bytes/record
+- 1 million records: ~500 MB table + 200 MB indexes
+- Growth rate: Scales linearly with event volume
+
+---
+
+### 4. Configuration Management
+
+**File Structure**:
+```
+config/
+├── postgres_connection_details.txt
+│   └── host, port, database, user, password, table
+└── postgres_setup.sql
+    └── DDL for database and table creation
+```
+
+**Design**:
+- Plain-text config file for simplicity
+- Parsed by both Python scripts
+- Production: Replace with environment variables or secrets manager
+
+---
+
+### 5. Checkpoint & Recovery Mechanism
+
+**Spark Checkpoint Structure**:
+```
+data/checkpoint/
+├── metadata/
+│   ├── 0 (first batch metadata)
+│   ├── 1 (second batch metadata)
+│   └── ...
+└── offsets/
+    ├── 0
+    ├── 1
+    └── ...
+```
+
+**Recovery Behavior**:
+- On startup: Spark reads checkpoint
+- If checkpoint exists: Resumes from last processed file
+- If no checkpoint: Starts from empty "seen files" list
+- Duplicate prevention: Deduplication catches any re-processed events
+
+---
+
+## Technology Stack Justification
+
+| Technology | Why Chosen | Alternatives |
+|-----------|-----------|--------------|
+| **Apache Spark** | Distributed, fault-tolerant, exactly-once semantics | Flink, Storm, Kafka Streams |
+| **PostgreSQL** | ACID compliance, reliable, indexed query support | MySQL, MongoDB, Snowflake |
+| **Python** | Easy data generation and integration | Java, Scala, Go |
+| **CSV Format** | Human-readable, no external dependencies | Parquet, Avro, Protocol Buffers |
+| **JDBC** | Standard Spark-to-RDBMS integration | Spark native writers, custom connectors |
+
+---
+
+## Scalability Considerations
+
+### Current Architecture Limits
+
+- **Throughput**: ~500 records/sec on single machine
+- **Latency**: 30-60 seconds (30-sec trigger + I/O)
+- **Storage**: Limited by single machine disk (~1TB practical)
+
+### Horizontal Scaling Path
+
+```
+Level 1: Single Machine (Current)
+└─ 50-500 rec/sec
+   Machine: 8GB RAM, 4 cores
+   
+Level 2: Spark Cluster (3 nodes)
+└─ 500-5,000 rec/sec
+   Spark: 3 executors
+   PostgreSQL: Single instance
+   
+Level 3: Full Cluster (8+ nodes)
+└─ 5,000+ rec/sec
+   Spark: 8+ executors
+   PostgreSQL: Cluster with replication
+   Kafka: Buffer between ingestion and processing
+```
+
+---
+
+## Error Handling & Resilience
+
+### Error Scenarios & Responses
+
+| Scenario | Detection | Response |
+|----------|-----------|----------|
+| CSV malformed | Schema validation | Skip file, log error, continue |
+| DB connection lost | Write failure | Retry 3x, timeout after 30s |
+| Duplicate event_id | Primary key constraint | Handled by dropDuplicates() pre-write |
+| Out of disk space | IOException | Log error, exit gracefully |
+| Timestamp parse error | Type coercion failure | Mark record as failed, log schema issue |
+
+### Checkpoint Recovery
+
+```
+┌─────────────────────────────┐
+│ Spark Job Failure           │
+│ (e.g., DB connection lost)  │
+└────────────┬────────────────┘
+             │
+             ▼
+┌─────────────────────────────┐
+│ Automatic Restart           │
+│ (supervised process or K8s) │
+└────────────┬────────────────┘
+             │
+             ▼
+┌──────────────────────────────┐
+│ Resume from Checkpoint       │
+│ • Read last processed batch  │
+│ • Skip already-processed CSV │
+│ • Prevent duplicate inserts  │
+└──────────────────────────────┘
+```
+
+---
+
+## Security Architecture
+
+### Data Flow Security
+
+```
+Untrusted Input (CSV)
+├─ Schema validation ✓
+├─ Type casting ✓
+├─ Null filtering ✓
+└─ Database constraints (PK) ✓
+
+Database Connection
+├─ Credentials in config file ✓
+├─ JDBC encrypted connection (optional)
+└─ Principle of least privilege ✓
+```
+
+### Recommended Production Security
+
+1. **Credential Management**: Use AWS Secrets Manager or HashiCorp Vault
+2. **Network**: Deploy database in private subnet, access via VPN
+3. **Encryption**: Enable PostgreSQL SSL/TLS
+4. **Audit Logging**: Enable PostgreSQL audit extension
+5. **Access Control**: Separate database user for Spark (read/write on events table only)
+
+---
+
+## Monitoring & Observability
+
+### Key Metrics Dashboard
+
+```
+Real-Time Metrics (refresh: 10 seconds)
+├─ Batch Processing
+│  ├─ Batches processed: [count]
+│  ├─ Records inserted: [count]
+│  ├─ Failed records: [count]
+│  └─ Processing latency: [p50, p95, p99]
+│
+├─ Data Quality
+│  ├─ Null event_ids filtered: [count]
+│  ├─ Duplicates detected: [count]
+│  └─ Schema validation errors: [count]
+│
+├─ Database
+│  ├─ Total records: [count]
+│  ├─ Records by event_type: [breakdown]
+│  └─ Insertion rate: [rec/sec]
+│
+└─ System
+   ├─ CPU usage: [%]
+   ├─ Memory (Spark): [%]
+   └─ Network I/O: [Mbps]
+```
+
+---
+
+## Deployment Architecture
+
+### Development (Current)
+
+```
+Single Machine
+├─ Data Generator (Python process)
+├─ Spark Job (single executor)
+├─ PostgreSQL (local instance)
+└─ CSV folder (local filesystem)
+```
+
+### Production (Recommended)
+
+```
+Cloud Platform (AWS example)
+├─ Data Generator
+│  └─ Lambda or EC2 instance
+├─ Spark Cluster
+│  └─ EMR (Elastic MapReduce)
+├─ PostgreSQL
+│  └─ RDS (managed database)
+├─ Data Storage
+│  └─ S3 (input data, checkpoints)
+└─ Monitoring
+   └─ CloudWatch + Datadog
+```
+
+---
+
+**Architecture Version**: 1.0  
+**Last Updated**: February 2026

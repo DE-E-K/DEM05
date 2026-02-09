@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual Environments
+venv/
+.venv/
+env
+
+# Spark & Hadoop artifacts
+spark-warehouse/
+metastore_db/
+derby.log
+
+# IDE settings
+.vscode/
+.idea/
+
+# Logs
+*.log
+logs/
+
+# Data files (Raw JSON and Processed Parquet)
+*.json
+*.parquet
+*.csv
+*.snappy.parquet
+*.snappy.parquet.crc
+*SUCCESS*
+
+
+# OS generated files
+.DS_Store
+Thumbs.db
